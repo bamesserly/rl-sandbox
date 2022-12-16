@@ -1,7 +1,8 @@
 Bunch of misc projects while I teach myself RL.
 
 ### Shower.py
-Keep the temperature of the shower within the right range.
+My implementation of the common beginner RL example of keeping the temparature
+of the shower within the desired range.
 
 This script implements the Bellman equation and builds/uses a q-table from
 scratch.

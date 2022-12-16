@@ -1,9 +1,15 @@
 #!/usr/bin/python
 #===============================================================================
-# code initially from: 
-# https://github.com/bhattacharyya/reach_circle
+# Implementation of the common shower temperature control beginner RL example.
 #
-# Training script. Creates qtable.csv.
+# This script implements the Bellman equation to create a Q table and test it.
+#
+# The shower environment is not currently separated from the model
+# training/testing, and the "agent" is a one-liner: 
+# action = np.argmax(q_table[state])
+#
+# run like:
+# python shower.py <n_episodes> <train(0)/test(1)>
 #===============================================================================
 import random
 import time
