@@ -16,11 +16,12 @@ alpha = 0.9 # learning rate
 gamma = 1.0 # discount rate
 epsilon = 0.0 # exploration threshold
 mov_list = [-1,0,1]  # Change shower temp
-initial_temp = 38 + random.randint(-3,3)
 shower_length = 60
-shower_target_max = 40
-shower_target_min = 36
-shower_target = 38
+temp_target_max = 40
+temp_target_min = 36
+temp_target = 38
+initial_temp_variation = 20
+initial_temp = temp_target + random.randint(-1*initial_temp_variation, initial_temp_variation)
 
 Modes = Enum('Modes', ['TRAIN', 'TEST'], start=0)
 
@@ -50,7 +51,7 @@ def shower(n_showers = 1000, mode = Modes.TRAIN.value):
         mode = Modes(int(mode))
     except ValueError:
         sys.exit("Invalid mode. Must be either train (0) or test (1).")
-    print(mode.name, "mode")
+    print(mode.name, "mode. N showers:", n_showers)
 
     # Initialize Q table
     q_table = None
@@ -95,7 +96,7 @@ def shower(n_showers = 1000, mode = Modes.TRAIN.value):
             i_shower += 1
 
             # reset initial temp, state
-            temp = shower_target + random.randint(-3,3)
+            temp = temp_target + random.randint(-1*initial_temp_variation, initial_temp_variation)
             state = temp
 
             # reset shower time
@@ -137,11 +138,13 @@ def shower(n_showers = 1000, mode = Modes.TRAIN.value):
         temp += temp_change
 
         # assign step reward
-        if shower_target_min <= temp <= shower_target_max:
+        if temp_target_min <= temp <= temp_target_max:
             step_reward = 1
         else:
-            #step_reward = -1*(abs(shower_target-temp))/shower_target
+            #step_reward = -1*(abs(temp_target-temp))
             step_reward = -1
+
+        #print("  ", state, temp, temp_change, step_reward)
 
         # Update the Q table based on this step's reward
         if mode == Modes.TRAIN:
@@ -172,5 +175,7 @@ def shower(n_showers = 1000, mode = Modes.TRAIN.value):
 if __name__ == "__main__":
     if len(sys.argv) == 2:
         shower(sys.argv[1])
+    elif len(sys.argv) == 3:
+        shower(int(sys.argv[1]), int(sys.argv[2]))
     else:
          shower()
