@@ -1,0 +1,9 @@
+conda create --name rl_conda_env
+conda activate rl_conda_env
+conda install -c apple tensorflow-deps
+python -m pip install tensorflow-macos==2.9.0
+python -m pip install tensorflow-metal==0.5.0
+python test.py
+python -m pip install jupyter
+python -m pip install gym
+git clone https://github.com/wau/keras-rl2.git; cd keras-rl2; python setup.py install; cd ..
