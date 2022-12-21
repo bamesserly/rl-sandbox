@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 # ===============================================================================
 # Implementation of the common shower temperature control beginner RL example.
 #
@@ -53,7 +54,31 @@ for i in range(len(mov_list)):
     action_space[i] = mov_list[i]
 
 
-# Update the q-table after every shower
+# starting state, ending state, action that took you from start to end
+def update_q_table(q_table, state_i, state_f, action, step_reward):
+    try:
+        # note about 2d np array access:
+        # q_table[state_i] accesses the state_i-th row, which is an array with
+        # length equal to number of actions.
+        # q_table[state_i, action] access the action-th element of the state_ith
+        # array.
+        old_q_value = q_table[state_i, action]
+    except IndexError:
+        print("ERROR with q_table")
+        print(q_table)
+        print(state_i, action)
+        sys.exit()
+
+    # max q value given the state after this temp change
+    next_max = np.max(q_table[state_f])
+    q_target = step_reward + gamma * next_max
+    q_delta = q_target - old_q_value
+    q_table[state_i, action] = old_q_value + alpha * q_delta
+
+    return q_table
+
+
+# Update the q-table after every second, not just after every shower
 def shower(n_showers=1000, mode=Modes.TRAIN.value):
     try:
         mode = Modes(int(mode))
@@ -164,25 +189,7 @@ def shower(n_showers=1000, mode=Modes.TRAIN.value):
 
         # Update the Q table based on this step's reward
         if mode == Modes.TRAIN:
-            try:
-                # note about 2d np array access:
-                # q_table[state] accesses the state-th row, which is an array with
-                # length equal to number of actions.
-                # q_table[state, action] access the action-th element of the stateth
-                # array.
-                old_q_value = q_table[state, action]
-            except IndexError:
-                print("ERROR with q_table")
-                print(q_table)
-                print(state, action)
-                sys.exit()
-
-            next_state = temp
-            # max q value given the state after this temp change
-            next_max = np.max(q_table[next_state])
-            q_target = step_reward + gamma * next_max
-            q_delta = q_target - old_q_value
-            q_table[state, action] = old_q_value + alpha * q_delta
+            q_table = update_q_table(q_table, state, temp, action, step_reward)
 
         # increment shower's reward and time
         shower_reward += step_reward
