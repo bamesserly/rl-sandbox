@@ -7,7 +7,7 @@ shower_length = 60
 temp_target_max = 40
 temp_target_min = 36
 temp_target = 38
-initial_temp_variation = 5
+initial_temp_variation = 10
 initial_temp = temp_target + random.randint(
     -1 * initial_temp_variation, initial_temp_variation
 )
