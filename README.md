@@ -48,13 +48,13 @@ As with `shower.py`, no reliance on other packages, except for numpy. And gym.sp
 - [x] refactor to clean up and better-resemble the gym-style
   environment-agent-model design (see `shower.ipynb`).
 - [x] put it into a notebook (see `shower.ipynb`).
-- [ ] systematically vary hyper parameters and visualize results.
+- [x] systematically vary hyper parameters and visualize results.
 - [ ] Experiment with other things like rewards.
 - [ ] Try this method on another simple game.
 - [ ] Can this method be used for multi-agent games?
 - [ ] Make it deep!
 
-Next is probably begin visualizing/optimize hyperparameters.
+Next is ... probably to move on to another game. Or make it deep.
 
 <h3>References</h3>
 
