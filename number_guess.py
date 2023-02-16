@@ -11,6 +11,7 @@ from gym.spaces import Discrete, Box
 import random
 import numpy as np
 import math
+import itertools
 
 
 class NumberGuess(Env):
@@ -72,9 +73,32 @@ class NumberGuess2(Env):
         self.n_numbers = 5
 
         # knowledge of the hidden answer: -1 if unknown otherwise contains its value
-        # [[-1,0,1,2,3]...[4,3,2,1,0]]
-        # size 720
-        answer_state = np.array(list(itertools.permutations(np.arange(-1,self.n_numbers,1), self.n_numbers)))
+        # [[-1,-1,-1,-1,-1]...[4,3,2,1,0]]
+        answer_state = np.array([a for a in itertools.product(np.arange(-1,self.n_numbers), repeat=self.n_numbers)])
+
+        # future answers are -1s -- -1's can't come before real numbers
+        #
+        # l := np.where(a==-1)[0]           --> indices of the -1s and set it to l
+        # if (l := np.where(a==-1)[0]).size --> true if list has a -1 else false
+        # a[l[0]:]                          --> from the first -1 until the end ...
+        # all(a[l[0]:] == -1)               --> are all -1?
+        def has_early_ones(a):
+            return all(a[l[0]:] == -1) if (l := np.where(a==-1)[0]).size else False
+
+        # numbers in the answer key are unique
+        #
+        # u               --> list of unique values in a that are greater than 0
+        # c               --> corresponding counts of each value in u
+        # u[c>1]          --> list of unique values that appear more than once
+        # not u[c>1].size --> true when there are no such duplicates
+        def answers_are_unique(a):
+            u,c = np.unique(a[a >= 0], return_counts=True)
+            return not u[c>1].size
+
+        # final size of answer space: 1030
+        answer_state = np.array([x for x in answer_state if has_early_ones(x)])
+        answer_state = np.array([x for x in answer_state if answers_are_unique(x)])
+
 
         # each number has been guessed or it hasn't
         # [[0,0,0,0,0]...[1,1,1,1,1]]
@@ -82,20 +106,15 @@ class NumberGuess2(Env):
         current_guess_state = np.array([a for a in itertools.product(np.arange(0, 2), repeat=self.n_numbers)])
 
         # concatenate these two state spaces
-        # size 115200
-        observation_space = np.array([np.concatenate(a) for a in itertools.product(answer_state, current_guess_state)])
-
-        #any([all([my_list[l] == x for x in my_list[l:]]) and my_list[l] == -1 for l in range(len(my_list))])
+        # size 65920
+        self.observation_states = np.array([np.concatenate(a) for a in itertools.product(answer_state, current_guess_state)])
 
         self.answer = list(range(self.n_numbers))
         random.shuffle(self.answer)
         self.state = 0  # which index in the answer list are you now?
         self.action_space = Discrete(self.n_numbers)  # guess any number in the range
 
-        # permutations of n numbers = n!
-        # current guess record = 2*n
-        state_dim = math.factorial(self.n_numbers) * 2 * self.n_numbers
-        self.observation_space = Discrete(state_dim)
+        self.observation_space = Discrete(self.observation_states.size)
 
         self.be_verbose = be_verbose
         self.n_guesses = 0
