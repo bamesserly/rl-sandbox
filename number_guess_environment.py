@@ -20,8 +20,9 @@ import itertools
 # if (l := np.where(a==-1)[0]).size --> true if list has a -1 else false
 # a[l[0]:]                          --> from the first -1 until the end ...
 # all(a[l[0]:] == -1)               --> are all -1?
+# IF the list doesn't have -1s then return it cuz it's good
 def has_early_ones(a):
-    return all(a[l[0] :] == -1) if (l := np.where(a == -1)[0]).size else False
+    return all(a[l[0] :] == -1) if (l := np.where(a == -1)[0]).size else True
 
 
 # numbers in the answer key are unique
@@ -139,44 +140,99 @@ class NumberGuess2(Env):
         if self.be_verbose:
             print("NumberGuess::__init__: hidden answer list:", self.answer)
 
-    def get_idx_from_state(self, state):
+    # in: array element of self.observation_states
+    # out: int element of self.observation_space
+    def get_state_from_array(self, arr):
         try:
-            return np.where((self.observation_states == state).all(axis=1))[0][0]
+            return np.where((self.observation_states == arr).all(axis=1))[0][0]
         except IndexError as e:
             print(
-                "get_idx_from_state Error: state",
-                state,
+                "get_state_from_array Error: array",
+                arr,
                 "not found in observation space.",
             )
             return -1
 
-    def get_state_from_idx(self, idx):
+    # in: int element of self.observation_space
+    # out: array element of self.observation_states
+    def get_array_from_state(self, state = None):
+        state = state if state != None else self.state
         try:
-            return self.observation_states[idx]
+            return self.observation_states[state]
         except IndexError as e:
-            print("get_state_from_idx Error:", e)
+            print("get_array_from_state Error:", e)
             return np.empty_like(self.observation_states[0])
 
-    # TODO
-    def get_current_guess_idx(self):
-        state = self.observation_states[self.state]
+    # in: int element of self.observation_space
+    # out: human-friendly dict
+    def get_dict_from_state(self, state = None):
+        keys = ["answer0", "answer1", "answer2", "answer3", "answer4",
+                "guess0", "guess1", "guess2", "guess3", "guess4"]
+        state = state if state != None else self.state
+        arr = self.get_array_from_state(state)
+        ret = dict(zip(keys, list(arr)))
+        ret["current_position"] = l[0] if (l := np.where(arr == -1)[0]).size else self.n_numbers
+        return ret
+
+    # in: human-friendly dict
+    # out: int element of self.observation_space
+    def get_state_from_dict(self, d):
+        ret = np.array([val for key, val in d.items])
+        assert self.get_state_from_array(ret)
+        return ret
+
+
+    def update_state(self, action):
+        current_position = self.get_dict_from_state()["current_position"]
+        state_arr = np.copy(self.get_array_from_state())
+
+        # if guess is correct
+        if action == self.answer[current_position]:
+            # update knowledge of answer
+            state_arr[current_position] = action
+            # reset current guesses all to -1
+            state_arr[self.n_numbers+1 :].fill(0)
+        # if guess is incorrect
+        else:
+            # update guess
+            state_arr[self.n_numbers + action] = 1
+
+        # update the state itself
+        self.state = self.get_state_from_array(state_arr)
+
+        return self.state
+
+
+    def is_done(self):
+        ret = -1 not in self.get_array_from_state()
+        check = self.get_dict_from_state()["current_position"] == self.n_numbers
+        try:
+            assert ret == check
+        except AssertionError:
+            print("is_done Error")
+            print("self.get_array_from_state()", self.get_array_from_state())
+            print("self.get_dict_from_state()[\"current_position\"]", self.get_dict_from_state()["current_position"])
+            raise
+        return ret
+
 
     def step(self, action):
+        self.n_guesses += 1
+        prev_position = self.get_dict_from_state()["current_position"]
+        self.update_state(action)
+        self.n_guesses += 1
         if self.be_verbose:
             print(
-                f"current position:{self.state}/{self.n_numbers - 1}"
-                "guess:{action},correct answer:{self.answer[self.state]}"
+                f"current position: {prev_position}/{self.n_numbers - 1} | "
+                f"guess:{action} | correct answer:{self.answer[prev_position]}"
             )
-        reward = 0
-        if action == self.answer[self.state]:
-            self.state += 1
-            reward = 1
-        else:
-            reward = -1
+        reward = 1 if self.get_dict_from_state()["current_position"] > prev_position else - 1
 
-        done = self.state == self.n_numbers or self.state < -50
+        if reward == 1: self.n_guesses = 0
 
-        info = {}
+        done = self.is_done()
+
+        info = self.get_dict_from_state()
 
         # Return step information
         return self.state, reward, done, info
