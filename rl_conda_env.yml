@@ -1,9 +1,9 @@
 name: rl_conda_env
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - gym-box2d
   - pip
   - scikit-learn
   - ipywidgets
-prefix: /opt/homebrew/Caskroom/miniconda/base/envs/rl_conda_env
